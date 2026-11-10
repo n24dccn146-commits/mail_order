@@ -1,0 +1,72 @@
+// ===== MAIL_ORDER =====
+Project mail_order {
+  database_type: 'MySQL'
+  Note: 'CSDL bán hàng qua thư - Học viện PTIT TP.HCM - INT1313'
+}
+
+Table employees {
+  employees_id int [pk, increment, note: 'Mã nhân viên']
+  first_name   varchar(50) [not null, note: 'Tên']
+  last_name    varchar(50) [not null, note: 'Họ']
+  zip_code     varchar(10) [not null, note: 'Mã bưu chính']
+  Note: 'Nhân viên tiếp nhận đơn'
+}
+
+Table customers {
+  customers_id int [pk, increment, note: 'Mã khách hàng']
+  first_name   varchar(50) [not null, note: 'Tên']
+  last_name    varchar(50) [not null, note: 'Họ']
+  zip_code     varchar(10) [not null, note: 'Mã bưu chính']
+  Note: 'Khách hàng'
+
+  indexes {
+    (last_name, first_name) [name: 'idx_customers_name']
+  }
+}
+
+Table parts {
+  parts_id          int [pk, increment, note: 'Mã mặt hàng']
+  part_name         varchar(100) [not null, note: 'Tên mặt hàng']
+  price             decimal(10,2) [not null, note: 'Đơn giá, CHECK >= 0']
+  quantity_in_stock int [not null, default: 0, note: 'Tồn kho, CHECK >= 0']
+  Note: 'Mặt hàng'
+
+  indexes {
+    part_name [name: 'idx_parts_name']
+  }
+}
+
+Table orders {
+  orders_id          int [pk, increment, note: 'Mã đơn hàng']
+  customers_id       int [not null, note: 'Khách hàng đặt hàng']
+  employees_id       int [not null, note: 'Nhân viên tiếp nhận']
+  received_date      date [not null, note: 'Ngày nhận đơn']
+  expected_ship_date date [null, note: 'Ngày giao dự kiến, CHECK >= received_date']
+  actual_ship_date   date [null, note: 'Ngày giao thực tế, NULL = chưa giao']
+  Note: 'Đơn đặt hàng'
+
+  indexes {
+    customers_id     [name: 'idx_orders_customers']
+    employees_id     [name: 'idx_orders_employees']
+    received_date    [name: 'idx_orders_received']
+    actual_ship_date [name: 'idx_orders_actual_ship']
+  }
+}
+
+Table order_details {
+  orders_id int [not null, note: 'Mã đơn hàng']
+  parts_id  int [not null, note: 'Mã mặt hàng']
+  quantity  int [not null, note: 'Số lượng đặt, CHECK > 0']
+  Note: 'Chi tiết đơn hàng (quan hệ N:N giữa orders và parts)'
+
+  indexes {
+    (orders_id, parts_id) [pk]
+    parts_id [name: 'idx_order_details_parts']
+  }
+}
+
+// ===== Quan hệ =====
+Ref fk_orders_customers: orders.customers_id > customers.customers_id [delete: restrict, update: cascade]
+Ref fk_orders_employees: orders.employees_id > employees.employees_id [delete: restrict, update: cascade]
+Ref fk_order_details_orders: order_details.orders_id > orders.orders_id [delete: cascade, update: cascade]
+Ref fk_order_details_parts: order_details.parts_id > parts.parts_id [delete: restrict, update: cascade]
